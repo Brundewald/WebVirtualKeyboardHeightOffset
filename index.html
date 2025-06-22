@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+    <head>     
+        <title>Test</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, interactive-widget=resizes-visual">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>  
+        <div class="container">
+            <div class="circle" style="top:0; left:50%"></div>
+            <div class="box" style="top:50%; left:50%"></div>
+            <div class="circle" style="top:100%; left:50%"></div>
+            <div style="width: 100%; position: fixed; bottom: 0px; margin: 0px; padding: 0px; left: 0px; border: 1px solid rgb(0, 0, 0); border-radius: 5px; background-color: rgb(255, 255, 255); font-size: 14pt;">
+                <input type="text" spellcheck="false" maxlength="524288" placeholder="" style="width: calc(100% - 85px); vertical-align: top; border-radius: 5px; outline: none; cursor: default; resize: none; border: 0px; padding: 10px 0px 10px 10px;">
+                <button style="border: 0px; position: absolute; left: calc(100% - 75px); top: 0px; width: 75px; height: 100%; margin: 0px; padding: 0px; border-radius: 5px; background-color: rgb(255, 255, 255);">OK</button>
+            </div>
+        </div>
+        <script>
+            let isMobile = false;
+
+            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                isMobile = true;
+            }
+
+            let isSafari = false;
+
+            if(isMobile){
+                isSafari = /iP(ad|od|hone)/i.test(navigator.userAgent) && 
+                     /Safari/i.test(navigator.userAgent) && 
+                     !/CriOS/i.test(navigator.userAgent) &&  
+                     !/FxiOS/i.test(navigator.userAgent);
+            }
+
+            let input = null;
+            let isNavigatorKeyboardApiAvailable = false;
+
+
+            function handleResize(){
+                if(input === null) {
+                    console.error('input === null on resize');
+                    return;
+                }
+            
+                var height = 0
+
+                if(isNavigatorKeyboardApiAvailable){
+                    height = navigator.virtualKeyboard.boundingRect.height;
+                }
+                else{
+                
+                    var visualViewportDifference = Math.abs(window.innerHeight - window.visualViewport.height);
+
+                if(visualViewportDifference > 100){
+                    height = visualViewportDifference;    
+                }
+                else{
+                    const keyboardHeight = Math.abs(window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
+                    const rect = input.getBoundingClientRect();
+                    const offsetBottom = window.innerHeight - rect.bottom;
+                    height = Math.abs(offsetBottom - keyboardHeight);
+                }
+            }
+        
+            const parentElement = input.parentElement;
+            parentElement.style.bottom = `${height}px`;
+
+            if(isNavigatorKeyboardApiAvailable){
+                return;
+            }
+
+            setTimeout(() => {
+                if(isSafari){    
+                    window.scrollBy(0, -height);
+                }
+                else{
+                    parentElement.scrollIntoView({behavior: "smooth", block: "end"});
+                }
+            }, 100);
+        }
+
+        function handleFocusIn(event){
+            if(event.target.nodeName !== 'INPUT'){
+                return;
+            }
+        
+            input = event.target;
+            if(isNavigatorKeyboardApiAvailable){
+                navigator.virtualKeyboard.addEventListener('geometrychange', handleResize);
+            } else {
+                window.visualViewport.addEventListener('resize', handleResize);
+            }
+        }
+
+        function handleFocusOut(event){
+            if(event.target.nodeName !== 'INPUT'){
+                return;
+            }
+        
+            if(isNavigatorKeyboardApiAvailable){
+                navigator.virtualKeyboard.removeEventListener('geometrychange', handleResize);
+            } else {
+                window.visualViewport.removeEventListener('resize', handleResize);
+            }
+        
+            event.target.parentElement.style.bottom = '0px';
+            input = null;   
+        }
+
+        if(isMobile){
+            if("virtualKeyboard" in navigator){
+                isNavigatorKeyboardApiAvailable = true;
+                navigator.virtualKeyboard.overlaysContent = true;
+                console.log("virtualKeyboardApi enabled, overlaysContent = " + navigator.virtualKeyboard.overlaysContent);
+            }
+        
+            document.addEventListener('focusin', handleFocusIn);
+            document.addEventListener('focusout', handleFocusOut);
+        }
+            
+        </script>
+    </body>
+</html>
